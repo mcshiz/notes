@@ -1,5 +1,11 @@
 # notes
+---
 
+- [Use ssh keys for github](#github-ssh)
+- [Mandatory code reviews](#mandatory-code-reviews)
+
+---
+<a name="github-ssh"></a>
 ### Use ssh keys for github
 Create ssh key on your maching 
 - `ssh-keygen -t rsa`
@@ -24,7 +30,7 @@ Change github repo urls from https to SSH
 Use github commands
   - git pull git@<ssh-alias>:<user_name>/<repo_name>.git
       - i.e git pull git@github-work:mcshiz/happy-faces.git
-  
+<a name="mandatory-code-reviews"></a> 
 ### Set mandatory code reviews by specific people on all pull requests
 - Create a file in the root of the project called CODEOWNERS . 
 - Add github usernames to it - i.e @your_mom 
