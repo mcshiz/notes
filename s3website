@@ -1,0 +1,83 @@
+  
+Description: Creates s3 website behind CloudFront Distribution
+
+Parameters:
+  CreateCloudFront:
+    Description: Do you want to build a CloudFront Distribution?
+    Type: String
+    Default: false
+    AllowedValues: [true, false]
+
+Conditions:
+  ShouldCreateCloudFront:
+    !Equals [true, !Ref CreateCloudFront]
+
+Resources:
+  S3WebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+    DeletionPolicy: Retain
+
+  WebsiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      PolicyDocument:
+        Id: MyPolicy
+        Version: 2012-10-17
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref S3WebsiteBucket
+                - /*
+      Bucket: !Ref S3WebsiteBucket
+
+  WebsiteCloudfront:
+    Type: AWS::CloudFront::Distribution
+    Condition: ShouldCreateCloudFront
+    Properties:
+      DistributionConfig:
+        Comment: Cloudfront Distribution pointing to S3 website bucket
+        Origins:
+        - DomainName: !GetAtt S3WebsiteBucket.DomainName
+          Id: S3Origin
+          CustomOriginConfig:
+            HTTPPort: '80'
+            HTTPSPort: '443'
+            OriginProtocolPolicy: http-only
+        Enabled: true
+        HttpVersion: 'http2'
+        DefaultRootObject: index.html
+        DefaultCacheBehavior:
+          AllowedMethods:
+          - GET
+          - HEAD
+          Compress: true
+          TargetOriginId: S3Origin
+          ForwardedValues:
+            QueryString: true
+            Cookies:
+              Forward: none
+          ViewerProtocolPolicy: redirect-to-https
+        PriceClass: PriceClass_All
+        CustomErrorResponses:
+        - ErrorCode: 404
+          ResponseCode: 200
+          ResponsePagePath: /index.html
+          ErrorCachingMinTTL: 0
+
+Outputs:
+  WebsiteURL:
+    Value: !GetAtt S3WebsiteBucket.WebsiteURL
+    Description: URL for website hosted on S3
+  S3BucketSecureURL:
+    Value: !Sub https://${S3WebsiteBucket.DomainName}
+    Description: Name of S3 bucket to hold website content
